@@ -79,6 +79,14 @@ make_gg_single_Categoly <- function(df, param_val){
   g1 + g2
 }
 
+make_gg_single_Continuous_input_vec <- function(df, vec){
+  vec |> 
+    purrr::map(.f = ~make_gg_single_Continuous(
+      df = df,
+      param_val = !!as.name(.x)))
+}
+
+
 # 3. define pipeline --------------------------------------------------------
 list(
   ## 1. ファイル名の設定 -------------------------------------------------
@@ -462,8 +470,67 @@ list(
   ),
   #### 3. arterial_pressure --------
   tar_target(
-    name = g_blood_oxy,
-    command = make_gg_single_Categoly(df = df_train_num2factor,
-                                      param_val = blood_oxy)
+    name = g_arterial_pressure,
+    command = make_gg_single_Continuous(df = df_train_num2factor,
+                                        param_val = arterial_pressure)
   ),
+  #### 4. respiratory_rate --------
+  tar_target(
+    name = g_respiratory_rate,
+    command = make_gg_single_Continuous(df = df_train_num2factor,
+                                        param_val = respiratory_rate)
+  ),
+  #### 5. temp --------
+  tar_target(
+    name = g_temp,
+    command = make_gg_single_Continuous(df = df_train_num2factor,
+                                        param_val = temp)
+  ),
+  #### 6. blood_pressure_1 --------
+  tar_target(
+    name = g_blood_pressure_1,
+    command = make_gg_single_Continuous(df = df_train_num2factor,
+                                        param_val = blood_pressure_1)
+  ),
+  #### 7. blood_pressure_2 --------
+  tar_target(
+    name = g_blood_pressure_2,
+    command = make_gg_single_Continuous(df = df_train_num2factor,
+                                        param_val = blood_pressure_2)
+  ),
+  #### 8. blood_pressure_3 --------
+  tar_target(
+    name = g_blood_pressure_3,
+    command = make_gg_single_Continuous(df = df_train_num2factor,
+                                        param_val = blood_pressure_3)
+  ),
+  #### 9. blood_pressure_4 --------
+  tar_target(
+    name = g_blood_pressure_4,
+    command = make_gg_single_Continuous(df = df_train_num2factor,
+                                        param_val = blood_pressure_4)
+  ),
+  
+  ### 6. 変数V ---------------------------
+  tar_target(
+    name = g_V_all,
+    command = make_gg_single_Continuous_input_vec(df = df_train_num2factor,
+                                                  vec = c("v1_heartrate_max",
+                                                          "v2",
+                                                          "v3",
+                                                          "v4",
+                                                          "v5",
+                                                          "v6",
+                                                          "v7",
+                                                          "v8",
+                                                          "v9",
+                                                          "v10",
+                                                          "v11",
+                                                          "v12",
+                                                          "v13",
+                                                          "v14",
+                                                          "v15",
+                                                          "v16"
+                                                  ))
+  )
 )

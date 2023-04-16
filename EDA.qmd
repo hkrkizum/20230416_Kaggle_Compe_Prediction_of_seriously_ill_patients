@@ -170,3 +170,19 @@ g_icu_8
 g_GSC_1 / g_GSC_2 / g_GSC_3 / g_GSC_4
 ```
 
+### 生理機能
+
+```{r}
+#| fig-height: 12
+
+g_heart_rate / g_blood_oxy / g_arterial_pressure / g_respiratory_rate / g_temp
+```
+
+### 変数V
+
+```{r}
+for(i in 1:length(g_V_all)){
+  plot(g_V_all[[i]])
+}
+```
+
