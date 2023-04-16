@@ -3,6 +3,7 @@ title: "EDA"
 format: 
   html:
     toc: true
+    toc-depth: 5
     number-sections: true
     code-fold: true
 ---
@@ -13,6 +14,10 @@ format:
 library(targets)
 tar_load_globals()
 tar_load_everything()
+
+library(DT)
+library(gtsummary)
+library(patchwork)
 ```
 
 ## 変数の把握
@@ -37,10 +42,65 @@ dplyr::setdiff(colnames(df_train), colnames(df_test))
 
 ## 変数の調査
 
-### 文字列データ
+### ユニークレコードの把握
+
+-   間隔尺度・比例尺度以外に、数値ラベル化された変数があるかどうかを確認するため
+-   ユニーク数12以下はカテゴリと扱って良さそう
 
 ```{r}
-df_train |> 
-  dplyr::select(where(is.character))
+df_Check_unique_record_train |> 
+  gt::gt()
+
+df_Check_unique_record_test |> 
+  gt::gt()
+```
+
+### サマリー
+
+#### 学習データ
+
+```{r}
+gts_df_train
+```
+
+#### テストデータ
+
+```{r}
+gts_df_test
+```
+
+### 欠損値の数
+
+#### 学習データ
+
+```{r}
+df_Check_NA_train |> 
+  dplyr::mutate(across(matches("Ratio"), .fns = ~round(.x, digits = 1))) |> 
+  gt::gt() 
+  
+```
+
+#### テストデータ
+
+```{r}
+df_Check_NA_test |> 
+  dplyr::mutate(Ratio = round(Ratio, digits = 1)) |> 
+  gt::gt()
+```
+
+## 変数の視覚化
+
+### 基礎情報 - 数値
+
+```{r}
+(g_age + g_bmi) / (g_height + g_weight)
+```
+
+### 基礎情報 - カテゴリ
+
+```{r}
+#| fig-height: 9
+
+g_situation_1 / g_situation_2 / g_gender / g_ethnicity
 ```
 
