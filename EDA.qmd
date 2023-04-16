@@ -1,0 +1,46 @@
+---
+title: "EDA"
+format: 
+  html:
+    toc: true
+    number-sections: true
+    code-fold: true
+---
+
+## パイプライン読み込み
+
+```{r echo=FALSE}
+library(targets)
+tar_load_globals()
+tar_load_everything()
+```
+
+## 変数の把握
+
+### 学習データ
+
+```{r}
+skim(df_train)
+```
+
+### テストデータ
+
+```{r}
+skim(df_test)
+```
+
+### 変数名の確認
+
+```{r}
+dplyr::setdiff(colnames(df_train), colnames(df_test))
+```
+
+## 変数の調査
+
+### 文字列データ
+
+```{r}
+df_train |> 
+  dplyr::select(where(is.character))
+```
+

@@ -1,2 +1,6 @@
 .Rproj.user/
 .Rhistory
+*_files/
+.gitignore
+*.html
+draft.R
