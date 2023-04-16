@@ -304,5 +304,166 @@ list(
     name = g_gender,
     command = make_gg_single_Categoly(df = df_train_num2factor,
                                       param_val = gender)
-  )
+  ),
+  
+  #### 3. ICU ---------------------------------------------
+  
+  ##### 0. ICU ID ------------------------------------------
+  tar_target(
+    name = g_icu_id,
+    command = {
+      df_train_num2factor |> 
+        dplyr::group_by(target_label, icu_id) |> 
+        dplyr::summarise(n = n(), .groups = "drop") |> 
+        tidyr::pivot_wider(names_from = target_label,
+                           values_from = n, names_prefix = "target_label_", 
+                           values_fill = 0) |> 
+        dplyr::mutate(Ratio = target_label_1/(target_label_0 + target_label_1)) |> 
+        dplyr::filter((target_label_0 + target_label_1) > 10) |>
+        dplyr::arrange(desc(Ratio)) |> 
+        dplyr::mutate(icu_id = fct_inorder(as.character(icu_id))) |> 
+        ggplot(aes(x = icu_id, y = Ratio)) +
+        geom_bar(stat = "identity") +
+        scale_y_continuous(labels = scales::label_percent()) +
+        theme_bw() +
+        theme(panel.grid.major.x = element_blank(),
+              axis.text.x = element_blank(),
+              axis.ticks.x = element_blank()) 
+    }
+  ),
+  ##### 1. ICU 1 ------------------------------------------
+  tar_target(
+    name = g_icu_1,
+    command = {
+      make_gg_single_Categoly(df = df_train_num2factor,
+                              param_val = icu_1) & 
+        theme(axis.text.x = element_text(angle = 30, hjust = 1))
+    }
+  ),
+  ##### 2. ICU 2 ------------------------------------------
+  tar_target(
+    name = g_icu_2,
+    command = {
+      make_gg_single_Categoly(df = df_train_num2factor,
+                              param_val = icu_2) 
+    }
+  ),
+  ##### 3. ICU 3 ------------------------------------------
+  tar_target(
+    name = g_icu_3,
+    command = {
+      make_gg_single_Categoly(df = df_train_num2factor,
+                              param_val = icu_3)  & 
+        theme(axis.text.x = element_text(angle = 30, hjust = 1))
+    }
+  ),
+  ##### 4. ICU 4 ------------------------------------------
+  tar_target(
+    name = g_icu_4,
+    command = {
+      make_gg_single_Continuous(df = df_train_num2factor,
+                              param_val = icu_4) 
+    }
+  ),
+  tar_target(
+    name = g_icu_4_log,
+    command = {
+      make_gg_single_Continuous(df = df_train_num2factor |> 
+                                dplyr::mutate(icu_4 = log10(icu_4+1)),
+                              param_val = icu_4) 
+    }
+  ),
+  ##### 5. ICU 5 ------------------------------------------
+  tar_target(
+    name = g_icu_5,
+    command = {
+      df_train_num2factor |> 
+        dplyr::group_by(target_label, icu_5) |> 
+        dplyr::summarise(n = n(), .groups = "drop") |> 
+        tidyr::pivot_wider(names_from = target_label,
+                           values_from = n, names_prefix = "target_label_", 
+                           values_fill = 0) |> 
+        dplyr::mutate(Ratio = target_label_1/(target_label_0 + target_label_1)) |> 
+        # dplyr::filter((target_label_0 + target_label_1) > 10) |>
+        dplyr::arrange(desc(Ratio)) |> 
+        dplyr::mutate(icu_5 = fct_inorder(as.character(icu_5))) |> 
+        ggplot(aes(x = icu_5, y = Ratio)) +
+        geom_bar(stat = "identity") +
+        scale_y_continuous(labels = scales::label_percent()) +
+        theme_bw() +
+        theme(panel.grid.major.x = element_blank(),
+              axis.text.x = element_blank(),
+              axis.ticks.x = element_blank()) 
+    }
+  ),
+  ##### 6. ICU 6 ------------------------------------------
+  tar_target(
+    name = g_icu_6,
+    command = {
+      make_gg_single_Continuous(df = df_train_num2factor,
+                                param_val = icu_6)
+    }
+  ),
+  ##### 7. ICU 7 ------------------------------------------
+  tar_target(
+    name = g_icu_7,
+    command = {
+      make_gg_single_Categoly(df = df_train_num2factor,
+                              param_val = icu_7)
+    }
+  ),
+  ##### 8. ICU 8 ------------------------------------------
+  tar_target(
+    name = g_icu_8,
+    command = {
+      make_gg_single_Categoly(df = df_train_num2factor,
+                              param_val = icu_8)
+    }
+  ),
+  
+  #### 4. グラスゴー・コーマ・スケール ----------------------
+  ##### 1. --------------------------------
+  tar_target(
+    name = g_GSC_1,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                      param_val = glasgow_coma_scale_1)
+  ),
+  ##### 2. --------------------------------
+  tar_target(
+    name = g_GSC_2,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                      param_val = glasgow_coma_scale_2)
+  ),
+  ##### 3. --------------------------------
+  tar_target(
+    name = g_GSC_3,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                      param_val = glasgow_coma_scale_3)
+  ),
+  ##### 4. --------------------------------
+  tar_target(
+    name = g_GSC_4,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                      param_val = glasgow_coma_scale_4)
+  ),
+  
+  ### 5. 生理パラメータ -----------------------
+  #### 1. HR --------
+  tar_target(
+    name = g_heart_rate,
+    command = make_gg_single_Continuous(df = df_train_num2factor,
+                                         param_val = heart_rate)
+  ),
+  #### 2. blood_oxy --------
+  tar_target(
+    name = g_blood_oxy,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                        param_val = blood_oxy)
+  ),
+  #### 3. arterial_pressure --------
+  tar_target(
+    name = g_blood_oxy,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                      param_val = blood_oxy)
+  ),
 )

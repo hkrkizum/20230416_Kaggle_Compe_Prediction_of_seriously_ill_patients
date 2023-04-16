@@ -104,3 +104,69 @@ df_Check_NA_test |>
 g_situation_1 / g_situation_2 / g_gender / g_ethnicity
 ```
 
+### ICU
+
+#### ICU ID
+
+```{r}
+g_icu_id
+```
+
+#### ICU 1
+
+```{r}
+g_icu_1
+```
+
+#### ICU 2
+
+```{r}
+g_icu_2
+```
+
+#### ICU 3
+
+```{r}
+g_icu_3
+```
+
+#### ICU 4
+
+```{r}
+#| fig-height: 6
+
+g_icu_4 / g_icu_4_log
+```
+
+#### ICU 5
+
+```{r}
+g_icu_5
+```
+
+#### ICU 6
+
+```{r}
+g_icu_6
+```
+
+#### ICU 7
+
+```{r}
+g_icu_7
+```
+
+#### ICU 8
+
+```{r}
+g_icu_8
+```
+
+### グラスゴー・コーマ・スケール
+
+```{r}
+#| fig-height: 9
+
+g_GSC_1 / g_GSC_2 / g_GSC_3 / g_GSC_4
+```
+
