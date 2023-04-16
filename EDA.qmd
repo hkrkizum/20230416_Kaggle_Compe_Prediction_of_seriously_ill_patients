@@ -181,8 +181,29 @@ g_heart_rate / g_blood_oxy / g_arterial_pressure / g_respiratory_rate / g_temp
 ### 変数V
 
 ```{r}
+#| fig-height: 3
+#| 
 for(i in 1:length(g_V_all)){
   plot(g_V_all[[i]])
 }
 ```
 
+### 変数W
+
+```{r}
+#| fig-height: 3
+#| 
+for(i in 1:length(g_W_all)){
+  plot(g_W_all[[i]])
+}
+```
+
+### 変数X
+
+```{r}
+#| fig-height: 3
+#| 
+for(i in 1:length(g_X_all)){
+  plot(g_X_all[[i]])
+}
+```

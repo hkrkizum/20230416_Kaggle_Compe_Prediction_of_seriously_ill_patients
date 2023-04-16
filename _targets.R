@@ -532,5 +532,41 @@ list(
                                                           "v15",
                                                           "v16"
                                                   ))
+  ),
+  ### 7. 変数W -----------------------------
+  tar_target(
+    name = g_W_all,
+    command = make_gg_single_Continuous_input_vec(df = df_train_num2factor,
+                                                  vec = c("w1",
+                                                          "w2",
+                                                          "w3",
+                                                          "w4",
+                                                          "w5",
+                                                          "w6",
+                                                          "w7",
+                                                          "w8",
+                                                          "w9",
+                                                          "w10",
+                                                          "w11",
+                                                          "w12",
+                                                          "w13",
+                                                          "w14",
+                                                          "w15",
+                                                          "w16",
+                                                          "w17",
+                                                          "w18"
+                                                  ))
+  ),
+  ### 8. 変数X -----------------------------
+  tar_target(
+    name = g_X_all,
+    command = make_gg_single_Continuous_input_vec(df = df_train_num2factor,
+                                                  vec = c("x1",
+                                                          "x2",
+                                                          "x3",
+                                                          "x4",
+                                                          "x5",
+                                                          "x6"
+                                                  ))
   )
 )
