@@ -306,7 +306,8 @@ list(
   tar_target(
     name = g_ethnicity,
     command = make_gg_single_Categoly(df = df_train_num2factor,
-                                      param_val = ethnicity) & theme(axis.text.x = element_text(angle = 30, hjust = 1))
+                                      param_val = ethnicity) &
+      theme(axis.text.x = element_text(angle = 30, hjust = 1))
   ),
   tar_target(
     name = g_gender,
@@ -318,7 +319,7 @@ list(
   
   ##### 0. ICU ID ------------------------------------------
   tar_target(
-    name = g_icu_id,
+    name = df_g_icu_id,
     command = {
       df_train_num2factor |> 
         dplyr::group_by(target_label, icu_id) |> 
@@ -327,9 +328,15 @@ list(
                            values_from = n, names_prefix = "target_label_", 
                            values_fill = 0) |> 
         dplyr::mutate(Ratio = target_label_1/(target_label_0 + target_label_1)) |> 
-        dplyr::filter((target_label_0 + target_label_1) > 10) |>
+        # dplyr::filter((target_label_0 + target_label_1) > 10) |>
         dplyr::arrange(desc(Ratio)) |> 
-        dplyr::mutate(icu_id = fct_inorder(as.character(icu_id))) |> 
+        dplyr::mutate(icu_id = fct_inorder(as.character(icu_id)))
+    }
+  ),
+  tar_target(
+    name = g_icu_id,
+    command = {
+      df_g_icu_id |> 
         ggplot(aes(x = icu_id, y = Ratio)) +
         geom_bar(stat = "identity") +
         scale_y_continuous(labels = scales::label_percent()) +
@@ -337,6 +344,56 @@ list(
         theme(panel.grid.major.x = element_blank(),
               axis.text.x = element_blank(),
               axis.ticks.x = element_blank()) 
+    }
+  ),
+  tar_target(
+    name = g_icu_id_hist,
+    command = {
+      df_g_icu_id |> 
+        ggplot(aes(x = Ratio)) +
+        geom_histogram() +
+        scale_x_continuous(labels = scales::label_percent()) +
+        theme_bw()  
+    }
+  ),
+  tar_target(
+    name = g_icu_id_facet_param,
+    command = {
+      df_g_icu_id |> 
+        dplyr::summarise(across(Ratio, list(mean = mean,
+                                            sd = sd), .names = "{.fn}")) |> 
+        dplyr::mutate(u_1 = mean + qnorm(0.8, 0, 1)*sd,
+                      u_2 = mean + qnorm(0.6, 0, 1)*sd,
+                      u_3 = mean + qnorm(0.4, 0, 1)*sd,
+                      u_4 = mean + qnorm(0.2, 0, 1)*sd
+        )
+    }
+  ),
+  tar_target(
+    name = df_g_icu_id_add_group,
+    command = {
+      df_g_icu_id |> 
+        dplyr::mutate(icu_id_Categoly = case_when(
+          Ratio > g_icu_id_facet_param$u_1  ~ "High_2",
+          Ratio > g_icu_id_facet_param$u_2  ~ "High_1",
+          Ratio > g_icu_id_facet_param$u_3  ~ "Mid",
+          Ratio > g_icu_id_facet_param$u_4  ~ "Low_1",
+          TRUE ~ "Low_2"
+          )) |> 
+        dplyr::mutate(icu_id_Categoly = fct_relevel(icu_id_Categoly,
+                                                    "High_2",
+                                                    "High_1",
+                                                    "Mid",
+                                                    "Low_1")) 
+    }
+  ),
+  tar_target(
+    name = g_icu_id_facet,
+    command = {
+      df_train_num2factor |> 
+        dplyr::left_join(df_g_icu_id_add_group) |> 
+        make_gg_single_Categoly(param_val = icu_id_Categoly) &
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
     }
   ),
   ##### 1. ICU 1 ------------------------------------------
@@ -383,7 +440,7 @@ list(
   ),
   ##### 5. ICU 5 ------------------------------------------
   tar_target(
-    name = g_icu_5,
+    name = df_g_icu_5,
     command = {
       df_train_num2factor |> 
         dplyr::group_by(target_label, icu_5) |> 
@@ -394,7 +451,13 @@ list(
         dplyr::mutate(Ratio = target_label_1/(target_label_0 + target_label_1)) |> 
         # dplyr::filter((target_label_0 + target_label_1) > 10) |>
         dplyr::arrange(desc(Ratio)) |> 
-        dplyr::mutate(icu_5 = fct_inorder(as.character(icu_5))) |> 
+        dplyr::mutate(icu_5 = fct_inorder(as.character(icu_5)))
+    }
+  ),
+  tar_target(
+    name = g_icu_5,
+    command = {
+      df_g_icu_5 |> 
         ggplot(aes(x = icu_5, y = Ratio)) +
         geom_bar(stat = "identity") +
         scale_y_continuous(labels = scales::label_percent()) +
@@ -402,6 +465,68 @@ list(
         theme(panel.grid.major.x = element_blank(),
               axis.text.x = element_blank(),
               axis.ticks.x = element_blank()) 
+    }
+  ),
+  tar_target(
+    name = g_icu_5_hist,
+    command = {
+      df_g_icu_5 |> 
+        ggplot(aes(x = Ratio)) +
+        geom_histogram() +
+        scale_x_continuous(labels = scales::label_percent()) +
+        theme_bw()  
+    }
+  ),
+  tar_target(
+    name = g_icu_5_hist_log,
+    command = {
+      df_g_icu_5 |> 
+        ggplot(aes(x = Ratio+0.001)) +
+        geom_histogram() +
+        scale_x_continuous(trans = scales::log10_trans()) +
+        theme_bw()
+    }
+  ),
+  tar_target(
+    name = g_icu_5_facet_param,
+    command = {
+      df_g_icu_5 |> 
+        dplyr::mutate(Ratio = log10(Ratio+0.001)) |> 
+        dplyr::summarise(across(Ratio, list(mean = mean,
+                                            sd = sd), .names = "{.fn}")) |> 
+        dplyr::mutate(u_1 = mean + qnorm(0.8, 0, 1)*sd,
+                      u_2 = mean + qnorm(0.6, 0, 1)*sd,
+                      u_3 = mean + qnorm(0.4, 0, 1)*sd,
+                      u_4 = mean + qnorm(0.2, 0, 1)*sd
+        )
+    }
+  ),
+  tar_target(
+    name = df_g_icu_5_add_group,
+    command = {
+      df_g_icu_5 |> 
+        dplyr::mutate(Ratio = log10(Ratio+0.001)) |> 
+        dplyr::mutate(icu_5_Categoly = case_when(
+          Ratio > g_icu_5_facet_param$u_1  ~ "High_2",
+          Ratio > g_icu_5_facet_param$u_2  ~ "High_1",
+          Ratio > g_icu_5_facet_param$u_3  ~ "Mid",
+          Ratio > g_icu_5_facet_param$u_4  ~ "Low_1",
+          TRUE ~ "Low_2"
+        )) |> 
+        dplyr::mutate(icu_5_Categoly = fct_relevel(icu_5_Categoly,
+                                                    "High_2",
+                                                    "High_1",
+                                                    "Mid",
+                                                    "Low_1")) 
+    }
+  ),
+  tar_target(
+    name = g_icu_5_facet,
+    command = {
+      df_train_num2factor |> 
+        dplyr::left_join(df_g_icu_5_add_group) |> 
+        make_gg_single_Categoly(param_val = icu_5_Categoly) &
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
     }
   ),
   ##### 6. ICU 6 ------------------------------------------
@@ -568,5 +693,132 @@ list(
                                                           "x5",
                                                           "x6"
                                                   ))
+  ),
+  
+  ### 9. 疾患 ---------------------
+  #### AID ------------------------
+  tar_target(
+    name = g_aids,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                      param_val = aids)
+  ),
+  #### cirrhosis ------------------------
+  tar_target(
+    name = g_cirrhosis,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                      param_val = cirrhosis)
+  ),
+  #### diabetes ------------------------
+  tar_target(
+    name = g_diabetes,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                      param_val = diabetes)
+  ),
+  #### hepatic_issue ------------------------
+  tar_target(
+    name = g_hepatic_issue,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                      param_val = hepatic_issue)
+  ),
+  #### hepatic_issue ------------------------
+  tar_target(
+    name = g_immunosuppression,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                      param_val = immunosuppression)
+  ),
+  #### leukemia ------------------------
+  tar_target(
+    name = g_leukemia,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                      param_val = leukemia)
+  ),
+  #### lymphoma ------------------------
+  tar_target(
+    name = g_lymphoma,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                      param_val = lymphoma)
+  ),
+  #### carcinoma ------------------------
+  tar_target(
+    name = g_carcinoma,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                      param_val = carcinoma)
+  ),
+  
+  ### 10. body system -----------------------
+  tar_target(
+    name = g_body_system_1,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                      param_val = body_system_1) &
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  ),
+  tar_target(
+    name = g_body_system_2,
+    command = make_gg_single_Categoly(df = df_train_num2factor,
+                                      param_val = body_system_2) &
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  ),
+  
+  
+  ## 4. Modeling -------------------------------
+  ### 1. Split data ----------------------
+  tar_target(
+    name = df_train_split,
+    command = {
+      df_train_num2factor |> 
+        rsample::initial_split(prop = 8/10,
+                               strata = target_label)
+    }
+  ),
+  tar_target(
+    name = df_train_split_train,
+    command = {
+      df_train_split |> 
+        rsample::training()
+    }
+  ),
+  tar_target(
+    name = df_train_split_test,
+    command = {
+      df_train_split |> 
+        rsample::testing()
+    }
+  ),
+  ### 2. Set recipe ---------------------
+  tar_target(
+    name = param_icu_id_Categoly,
+    command = {
+      list(df_g_icu_id_add_group |> 
+                    dplyr::filter(icu_id_Categoly == "High_2") |> 
+                    dplyr::pull(icu_id) |> 
+                    as.character(),
+                  
+                  df_g_icu_id_add_group |> 
+                    dplyr::filter(icu_id_Categoly == "High_1") |> 
+                    dplyr::pull(icu_id) |> 
+                    as.character(),
+                  
+                  df_g_icu_id_add_group |> 
+                    dplyr::filter(icu_id_Categoly == "Mid") |> 
+                    dplyr::pull(icu_id) |> 
+                    as.character(),
+                  
+                  df_g_icu_id_add_group |> 
+                    dplyr::filter(icu_id_Categoly == "Low_1") |> 
+                    dplyr::pull(icu_id) |> 
+                    as.character(),
+                  
+                  df_g_icu_id_add_group |> 
+                    dplyr::filter(icu_id_Categoly == "Low_2") |> 
+                    dplyr::pull(icu_id) |> 
+                    as.character())
+    }
+  ),
+  tar_target(
+    name = recipe_1,
+    command = {
+      df_train_split_train |> 
+        recipes::recipe(target_label ~ .) 
+    }
   )
 )

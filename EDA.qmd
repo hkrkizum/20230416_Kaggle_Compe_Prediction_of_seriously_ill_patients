@@ -207,3 +207,76 @@ for(i in 1:length(g_X_all)){
   plot(g_X_all[[i]])
 }
 ```
+
+### 疾患
+
+#### aids
+
+```{r}
+g_aids
+```
+
+#### cirrhosis
+
+```{r}
+g_cirrhosis
+```
+
+#### diabetes
+
+```{r}
+g_diabetes
+```
+
+#### hepatic_issue
+
+```{r}
+g_hepatic_issue
+```
+
+#### immunosuppression
+
+```{r}
+g_immunosuppression
+```
+
+#### leukemia
+
+```{r}
+g_leukemia
+```
+
+#### lymphoma
+
+```{r}
+g_lymphoma
+```
+
+#### carcinoma
+
+```{r}
+g_carcinoma
+```
+
+### Body System
+
+```{r}
+g_body_system_1
+g_body_system_2
+```
+
+## 変数の前処理
+
+1.    ICU ID, ICU 5はRatioに応じて3段階に分ける
+
+### ICU ID
+
+```{r}
+g_icu_id_hist / g_icu_id_facet
+```
+
+### ICU 5
+
+```{r}
+g_icu_5_hist / g_icu_5_facet
+```
