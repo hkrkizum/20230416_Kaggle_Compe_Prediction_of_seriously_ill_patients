@@ -6,6 +6,7 @@ library(targets)
 options(tidyverse.quiet = TRUE)
 tar_option_set(
   packages = c("tidyverse",
+               "forcats",
                "data.table",
                "here",
                "skimr",
@@ -15,7 +16,11 @@ tar_option_set(
                "smd",
                
                "gghalves",
-               "patchwork"),
+               "patchwork",
+               
+               "tidymodels",
+               "doFuture",
+               "parallel"),
   format = "qs",
   seed = 54147
 )
@@ -85,7 +90,6 @@ make_gg_single_Continuous_input_vec <- function(df, vec){
       df = df,
       param_val = !!as.name(.x)))
 }
-
 
 # 3. define pipeline --------------------------------------------------------
 list(
@@ -784,7 +788,18 @@ list(
         rsample::testing()
     }
   ),
+  
+  tar_target(
+    name = df_train_split_kvf,
+    command = {
+      df_train_split_train |> 
+        rsample::vfold_cv(v = 5,
+                          repeats = 4,
+                          strata = target_label)
+    }
+  ),
   ### 2. Set recipe ---------------------
+  #### 0. カテゴリ分けリスト作成 --------
   tar_target(
     name = param_icu_id_Categoly,
     command = {
@@ -815,10 +830,222 @@ list(
     }
   ),
   tar_target(
+    name = param_icu_5_Categoly,
+    command = {
+      list(df_g_icu_5_add_group |> 
+             dplyr::filter(!is.na(icu_5)) |> 
+             dplyr::filter(icu_5_Categoly == "High_2") |> 
+             dplyr::pull(icu_5 ) |> 
+             as.character(),
+           
+           df_g_icu_5_add_group |> 
+             dplyr::filter(!is.na(icu_5)) |> 
+             dplyr::filter(icu_5_Categoly == "High_1") |> 
+             dplyr::pull(icu_5 ) |> 
+             as.character(),
+           
+           df_g_icu_5_add_group |> 
+             dplyr::filter(!is.na(icu_5)) |> 
+             dplyr::filter(icu_5_Categoly == "Mid") |> 
+             dplyr::pull(icu_5 ) |> 
+             as.character(),
+           
+           df_g_icu_5_add_group |> 
+             dplyr::filter(!is.na(icu_5)) |> 
+             dplyr::filter(icu_5_Categoly == "Low_1") |> 
+             dplyr::pull(icu_5 ) |> 
+             as.character(),
+           
+           df_g_icu_5_add_group |> 
+             dplyr::filter(!is.na(icu_5)) |> 
+             dplyr::filter(icu_5_Categoly == "Low_2") |> 
+             dplyr::pull(icu_5 ) |> 
+             as.character())
+    }
+  ),
+  #### 1. レシピ -------------
+  tar_target(
     name = recipe_1,
     command = {
       df_train_split_train |> 
-        recipes::recipe(target_label ~ .) 
+        # id
+        # personal_id_1
+        # personal_id_2
+        recipes::recipe(target_label ~ .) |> 
+        recipes::update_role(c(id, personal_id_1, personal_id_2), new_role = "id variable") |> 
+        
+        # gender
+        # height
+        # weight
+        # age
+        # situation_2
+        # ethnicity
+        recipes::step_mutate(gender = if_else(gender == "", "Other", gender)) |> 
+        recipes::step_mutate(gender = forcats::fct_relevel(gender, "M", "F")) |> 
+        recipes::step_impute_linear(c(height, weight), impute_with = imp_vars(gender)) |> 
+        recipes::step_mutate(bmi = weight/(height/100)^2) |> 
+        recipes::step_impute_median(age) |> 
+        recipes::step_impute_mode(situation_2) |> 
+        recipes::step_other(ethnicity, threshold = 0.05) |> 
+        
+        #
+        # ICU ID
+        #
+        recipes::step_other(icu_1, threshold = 0.02) |> 
+        recipes::step_impute_mode(icu_5) |> 
+        recipes::step_impute_median(icu_6) |> 
+        recipes::step_impute_mode(icu_8) |> 
+        
+        recipes::step_mutate(icu_id = case_when(
+          icu_id %in% param_icu_id_Categoly[[1]] ~ "1",
+          icu_id %in% param_icu_id_Categoly[[2]] ~ "2",
+          icu_id %in% param_icu_id_Categoly[[3]] ~ "3",
+          icu_id %in% param_icu_id_Categoly[[4]] ~ "4",
+          icu_id %in% param_icu_id_Categoly[[5]] ~ "5",
+          TRUE ~ "5"
+        )) |> 
+        recipes::step_mutate(icu_id = forcats::fct_relevel(icu_id, sort)) |> 
+        
+        recipes::step_mutate(icu_5 = case_when(
+          icu_5 %in% param_icu_5_Categoly[[1]] ~ "1",
+          icu_5 %in% param_icu_5_Categoly[[2]] ~ "2",
+          icu_5 %in% param_icu_5_Categoly[[3]] ~ "3",
+          icu_5 %in% param_icu_5_Categoly[[4]] ~ "4",
+          icu_5 %in% param_icu_5_Categoly[[5]] ~ "5",
+          TRUE ~ "5"
+        )) |> 
+        recipes::step_mutate(icu_5 = forcats::fct_relevel(icu_5, sort)) |> 
+        
+        #
+        # glasgow_coma_scale
+        #
+        recipes::step_impute_mode(dplyr::matches("glasgow_coma_scale")) |> 
+        recipes::step_mutate(across(dplyr::matches("glasgow_coma_scale"), as.numeric)) |> 
+        
+        #
+        # heart_rate, arterial_pressure, respiratory_rate, temp, blood_oxy
+        #
+        recipes::step_impute_median(heart_rate, 
+                                    arterial_pressure,
+                                    respiratory_rate,
+                                    temp,
+                                    dplyr::matches("blood_pressure_")) |> 
+        recipes::step_impute_bag(blood_oxy, impute_with = imp_vars(heart_rate,
+                                                                   arterial_pressure,
+                                                                   respiratory_rate,
+                                                                   temp)) |> 
+        #
+        # V, W
+        #
+        recipes::step_impute_median(v1_heartrate_max, 
+                                    dplyr::matches("v[0-9]{1,2}"),
+                                    dplyr::matches("w[0-9]{1,2}")) |> 
+        
+        #
+        # x
+        #
+        recipes::step_mutate(across(c(x5, x6), function(x){if_else(x < 0, NA_real_, x)})) |> 
+        recipes::step_impute_median(dplyr::matches("x[0-9]{1,2}")) |> 
+        
+        #
+        # disease
+        #
+        recipes::step_impute_mode(aids, 
+                                  cirrhosis,
+                                  diabetes,
+                                  hepatic_issue,
+                                  immunosuppression,
+                                  leukemia,
+                                  lymphoma,
+                                  carcinoma) |> 
+        #
+        # body system
+        #
+        recipes::step_other(body_system_1, body_system_2, threshold = 0.04) |> 
+        
+        recipes::step_scale(all_numeric_predictors()) |> 
+        recipes::step_dummy(all_nominal_predictors()) 
+    }
+  ),
+  
+  tar_target(
+    name = check_rec,
+    command = {
+      recipe_1 |> prep() |> bake(new_data = NULL)
+    }
+  ),
+  
+  ### 2. エンジン ---------------
+  tar_target(
+    name = spec_1_logistic_glmnet,
+    command = {
+      logistic_reg(mode = "classification", 
+                   penalty = 0, 
+                   mixture = 1) %>% 
+        set_engine("glmnet") 
+    }
+  ),
+  
+  tar_target(
+    name = spec_2_logistic_glmnet_lasso,
+    command = {
+      logistic_reg(mode = "classification", 
+                   penalty = 0,
+                   mixture = 0) %>% 
+        set_engine("glmnet") 
+    }
+  ),
+  
+  ### 3. ワークフロー
+  tar_target(
+    name = wflow_1_rec_1_spec_1_logistic_glmnet,
+    command = {
+      workflow() %>% 
+        add_recipe(recipe = recipe_1) |> 
+        add_model(spec = spec_1_logistic_glmnet)
+    }
+  ),
+  
+  tar_target(
+    name = wflow_2_rec_1_spec_2_logistic_glmnet_lasso,
+    command = {
+      workflow() %>% 
+        add_recipe(recipe = recipe_1) |> 
+        add_model(spec = spec_2_logistic_glmnet_lasso)
+    }
+  ),
+  
+  ### 4.メトリクス -------------
+  tar_target(
+    name = fit_1_rec_1_spec_1_logistic_glmnet,
+    command = {
+      
+      all_cores <- parallel::detectCores(logical = TRUE) - 8
+      
+      doFuture::registerDoFuture()
+      cl <- parallel::makeCluster(all_cores)
+      future::plan(cluster, workers = cl)
+      
+      wflow_1_rec_1_spec_1_logistic_glmnet |> 
+        fit_resamples(df_train_split_kvf,
+                      control = control_resamples(allow_par = TRUE,
+                                                  parallel_over = "resamples"))
+    }
+  ),
+  tar_target(
+    name = fit_2_rec_1_spec_2_logistic_glmnet_lasso,
+    command = {
+      
+      all_cores <- parallel::detectCores(logical = TRUE) - 8
+      
+      doFuture::registerDoFuture()
+      cl <- parallel::makeCluster(all_cores)
+      future::plan(cluster, workers = cl)
+      
+      wflow_2_rec_1_spec_2_logistic_glmnet_lasso |> 
+        fit_resamples(df_train_split_kvf,
+                      control = control_resamples(allow_par = TRUE,
+                                                  parallel_over = "resamples"))
     }
   )
 )
