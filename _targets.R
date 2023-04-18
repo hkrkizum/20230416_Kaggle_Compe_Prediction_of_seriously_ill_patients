@@ -977,41 +977,85 @@ list(
   
   ### 2. エンジン ---------------
   tar_target(
-    name = spec_1_logistic_glmnet,
+    name = spec_logistic_glmnet_lasso,
     command = {
       logistic_reg(mode = "classification", 
-                   penalty = 0, 
+                   penalty = 1, 
                    mixture = 1) %>% 
         set_engine("glmnet") 
     }
   ),
   
   tar_target(
-    name = spec_2_logistic_glmnet_lasso,
+    name = spec_logistic_glmnet_ridge,
     command = {
       logistic_reg(mode = "classification", 
-                   penalty = 0,
+                   penalty = 1,
                    mixture = 0) %>% 
         set_engine("glmnet") 
     }
   ),
   
-  ### 3. ワークフロー
   tar_target(
-    name = wflow_1_rec_1_spec_1_logistic_glmnet,
+    name = spec_logistic_glmnet_elastic,
     command = {
-      workflow() %>% 
-        add_recipe(recipe = recipe_1) |> 
-        add_model(spec = spec_1_logistic_glmnet)
+      logistic_reg(mode = "classification", 
+                   penalty = 1,
+                   mixture = 0.5) %>% 
+        set_engine("glmnet") 
     }
   ),
   
   tar_target(
-    name = wflow_2_rec_1_spec_2_logistic_glmnet_lasso,
+    name = spec_boost_xgboost,
     command = {
-      workflow() %>% 
-        add_recipe(recipe = recipe_1) |> 
-        add_model(spec = spec_2_logistic_glmnet_lasso)
+      boost_tree(mode = "classification") |> 
+        set_engine("xgboost") 
+    }
+  ),
+  
+  tar_target(
+    name = spec_svm_poly,
+    command = {
+      svm_poly(mode = "classification") |> 
+        set_engine("kernlab") 
+    }
+  ),
+  
+  
+  
+  
+  ### 3. ワークフロー
+  # tar_target(
+  #   name = wflow_1_rec_1_spec_1_logistic_glmnet,
+  #   command = {
+  #     workflow() %>% 
+  #       add_recipe(recipe = recipe_1) |> 
+  #       add_model(spec = spec_1_logistic_glmnet)
+  #   }
+  # ),
+  # 
+  # tar_target(
+  #   name = wflow_2_rec_1_spec_2_logistic_glmnet_lasso,
+  #   command = {
+  #     workflow() %>% 
+  #       add_recipe(recipe = recipe_1) |> 
+  #       add_model(spec = spec_2_logistic_glmnet_lasso)
+  #   }
+  # ),
+  tar_target(
+    name = wflow_set,
+    command = {
+      workflow_set(
+        preproc = list(recipe = recipe_1),
+        models = list(lasso = spec_logistic_glmnet_lasso,
+                      ridge = spec_logistic_glmnet_ridge,
+                      elast = spec_logistic_glmnet_elastic,
+                      xgb = spec_boost_xgboost,
+                      cart = spec_boost_xgboost, 
+                      svm = spec_svm_poly),
+        cross = TRUE
+      )
     }
   ),
   
@@ -1026,26 +1070,26 @@ list(
       cl <- parallel::makeCluster(all_cores)
       future::plan(cluster, workers = cl)
       
-      wflow_1_rec_1_spec_1_logistic_glmnet |> 
-        fit_resamples(df_train_split_kvf,
-                      control = control_resamples(allow_par = TRUE,
-                                                  parallel_over = "resamples"))
-    }
-  ),
-  tar_target(
-    name = fit_2_rec_1_spec_2_logistic_glmnet_lasso,
-    command = {
-      
-      all_cores <- parallel::detectCores(logical = TRUE) - 8
-      
-      doFuture::registerDoFuture()
-      cl <- parallel::makeCluster(all_cores)
-      future::plan(cluster, workers = cl)
-      
-      wflow_2_rec_1_spec_2_logistic_glmnet_lasso |> 
+      wflow_set |> 
         fit_resamples(df_train_split_kvf,
                       control = control_resamples(allow_par = TRUE,
                                                   parallel_over = "resamples"))
     }
   )
+  # tar_target(
+  #   name = fit_2_rec_1_spec_2_logistic_glmnet_lasso,
+  #   command = {
+  #     
+  #     all_cores <- parallel::detectCores(logical = TRUE) - 8
+  #     
+  #     doFuture::registerDoFuture()
+  #     cl <- parallel::makeCluster(all_cores)
+  #     future::plan(cluster, workers = cl)
+  #     
+  #     wflow_2_rec_1_spec_2_logistic_glmnet_lasso |> 
+  #       fit_resamples(df_train_split_kvf,
+  #                     control = control_resamples(allow_par = TRUE,
+  #                                                 parallel_over = "resamples"))
+  #   }
+  # )
 )
