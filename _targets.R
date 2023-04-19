@@ -20,7 +20,11 @@ tar_option_set(
                
                "tidymodels",
                "doFuture",
-               "parallel"),
+               "parallel",
+               
+               "xgboost",
+               "plsmod",
+               "glmnet"),
   format = "qs",
   seed = 54147
 )
@@ -976,6 +980,7 @@ list(
   ),
   
   ### 2. エンジン ---------------
+  #### base ------------------------
   tar_target(
     name = spec_logistic_glmnet_lasso,
     command = {
@@ -1021,6 +1026,55 @@ list(
         set_engine("mixOmics") 
     }
   ),
+  
+  #### チューン
+  tar_target(
+    name = spec_logistic_glmnet_lasso_tune,
+    command = {
+      logistic_reg(mode = "classification", 
+                   penalty = tune::tune(), 
+                   mixture = 1) %>% 
+        set_engine("glmnet") 
+    }
+  ),
+  
+  tar_target(
+    name = spec_logistic_glmnet_ridge,
+    command = {
+      logistic_reg(mode = "classification", 
+                   penalty = tune::tune(),
+                   mixture = 0) %>% 
+        set_engine("glmnet") 
+    }
+  ),
+  
+  tar_target(
+    name = spec_logistic_glmnet_elastic,
+    command = {
+      logistic_reg(mode = "classification", 
+                   penalty = tune::tune(),
+                   mixture = tune::tune()) %>% 
+        set_engine("glmnet") 
+    }
+  ),
+  
+  tar_target(
+    name = spec_boost_xgboost,
+    command = {
+      boost_tree(mode = "classification",
+                 ) |> 
+        set_engine("xgboost") 
+    }
+  ),
+  
+  tar_target(
+    name = spec_PLS,
+    command = {
+      pls(mode = "classification") |> 
+        set_engine("mixOmics") 
+    }
+  ),
+  
   
   ### 3. ワークフロー
   # tar_target(
