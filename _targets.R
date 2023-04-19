@@ -1015,15 +1015,12 @@ list(
   ),
   
   tar_target(
-    name = spec_svm_poly,
+    name = spec_PLS,
     command = {
-      svm_poly(mode = "classification") |> 
-        set_engine("kernlab") 
+      pls(mode = "classification") |> 
+        set_engine("mixOmics") 
     }
   ),
-  
-  
-  
   
   ### 3. ワークフロー
   # tar_target(
@@ -1044,7 +1041,7 @@ list(
   #   }
   # ),
   tar_target(
-    name = wflow_set,
+    name = wflow_set_1,
     command = {
       workflow_set(
         preproc = list(recipe = recipe_1),
@@ -1052,8 +1049,7 @@ list(
                       ridge = spec_logistic_glmnet_ridge,
                       elast = spec_logistic_glmnet_elastic,
                       xgb = spec_boost_xgboost,
-                      cart = spec_boost_xgboost, 
-                      svm = spec_svm_poly),
+                      pls = spec_PLS),
         cross = TRUE
       )
     }
@@ -1061,8 +1057,9 @@ list(
   
   ### 4.メトリクス -------------
   tar_target(
-    name = fit_1_rec_1_spec_1_logistic_glmnet,
+    name = fit_wflow_set_1,
     command = {
+      options(tidymodels.dark = TRUE)
       
       all_cores <- parallel::detectCores(logical = TRUE) - 8
       
@@ -1070,10 +1067,18 @@ list(
       cl <- parallel::makeCluster(all_cores)
       future::plan(cluster, workers = cl)
       
-      wflow_set |> 
-        fit_resamples(df_train_split_kvf,
-                      control = control_resamples(allow_par = TRUE,
-                                                  parallel_over = "resamples"))
+      wflow_set_1 |> 
+        workflow_map(
+          fn = "fit_resamples",
+          verbose = TRUE,
+          seed = 54147,
+          
+          resamples = df_train_split_kvf,
+          metrics = yardstick::metric_set(pr_auc, roc_auc, sensitivity, specificity, f_meas),
+          control = control_resamples(allow_par = TRUE,
+                                      verbose = TRUE,
+                                      parallel_over = "resamples")
+        )
     }
   )
   # tar_target(
